@@ -9,7 +9,8 @@
 using namespace std;
 
 map<int, int> memory;
-vector<pair<int, char>> seq_of_access; // pair of address and operation (r/w)
+
+
 bool writeThrough= false;
 bool writeAllocate= false;
 
@@ -68,7 +69,7 @@ struct cache {
         misses = 0;
     }
 
-    void access_sequence() {
+    void access_sequence(vector<pair<int, char>> &seq_of_access) {
         int totalcycles=0;
         
         for (auto access : seq_of_access) {
@@ -171,7 +172,7 @@ struct cache {
     }
 };
 
-void loading_data(string &filename) {
+void loading_data(string &filename, vector<pair<int, char>> &seq_of_access) {
     ifstream file(filename);
     string line;
 
@@ -195,42 +196,64 @@ void loading_data(string &filename) {
 }
 
 int main() {
-    int cacheSize, lineSize, cycles;
+    
+    
+    
+    // Input cache parameters for data cache
+    int dataCacheSize, dataLineSize, dataCycles;
     string writePolicy_hit, writePolicy_miss;
+    cout << "Enter data cache size (in bytes) - must be a power of 2 in the form 2^n: ";
+    cin >> dataCacheSize;
+    cout << "Enter data cache line size (in bytes) - must be a power of 2 in the form 2^n: ";
+    cin >> dataLineSize;
+    cout << "Enter number of cycles needed to access the data cache: ";
+    cin >> dataCycles;
     do {
-        cout << "Enter cache size (in bytes) must be a power of 2 in the form 2^n: ";
-        cin >> cacheSize;
-    } while (!isPowerOfTwo(cacheSize));
-    do {
-        cout << "Enter cache line size (in bytes) must be a power of 2 in the form 2^n: ";
-        cin >> lineSize;
-    } while (!isPowerOfTwo(lineSize) || lineSize >= cacheSize);
-    cout << "Enter number of cycles needed to access the cache: ";
-    cin >> cycles;
-    do {
-           cout << "Enter write policy for hit (w for write-back, t for write-through): ";
-           cin >> writePolicy_hit;
-       } while (writePolicy_hit != "w" && writePolicy_hit != "t");
-    do {
-           cout << "Enter write policy for miss (1 for write-allocate, 2 for no write-allocate): ";
-           cin >> writePolicy_miss;
-       } while (writePolicy_miss != "1" && writePolicy_miss != "2");
-    
-    if(writePolicy_hit=="t")
-        writeThrough=true;
-    
-    if(writePolicy_miss=="1")
-        writeAllocate=true;
+             cout << "Enter write policy for hit (w for write-back, t for write-through): ";
+             cin >> writePolicy_hit;
+         } while (writePolicy_hit != "w" && writePolicy_hit != "t");
+      do {
+             cout << "Enter write policy for miss (1 for write-allocate, 2 for no write-allocate): ";
+             cin >> writePolicy_miss;
+         } while (writePolicy_miss != "1" && writePolicy_miss != "2");
+      
+      if(writePolicy_hit=="t")
+          writeThrough=true;
+      
+      if(writePolicy_miss=="1")
+          writeAllocate=true;
+
+    // Load data access sequence
+    string dataFilename;
+    cout << "Enter the name of the file containing the data access sequence. (eg. data.txt)" << endl;
+    cin >> dataFilename;
+    vector<pair<int, char>> dataSeq;
+    loading_data(dataFilename, dataSeq);
+
+    // Create and simulate data cache
+    cache data_cache(dataCacheSize, dataLineSize, dataCycles);
+    data_cache.access_sequence(dataSeq);
 
     
-    
-    string filename;
-    cout << "Enter the name of the file containing the access sequence. (eg. input.txt)" << endl;
-    cin >> filename;
-    loading_data(filename);
+    // Input cache parameters for instruction cache assumed read only
+      int instructionCacheSize, instructionLineSize, instructionCycles;
+      cout << "Enter instruction cache size (in bytes) - must be a power of 2 in the form 2^n: ";
+      cin >> instructionCacheSize;
+      cout << "Enter instruction cache line size (in bytes) - must be a power of 2 in the form 2^n: ";
+      cin >> instructionLineSize;
+      cout << "Enter number of cycles needed to access the instruction cache: ";
+      cin >> instructionCycles;
 
-    cache my_cache(cacheSize, lineSize, cycles);
-    my_cache.access_sequence();
+      // Load instruction access sequence
+      string instructionFilename;
+      cout << "Enter the name of the file containing the instruction access sequence. (eg. instructions.txt)" << endl;
+      cin >> instructionFilename;
+      vector<pair<int, char>> instructionSeq;
+      loading_data(instructionFilename, instructionSeq);
+
+      // Create and simulate instruction cache
+      cache instruction_cache(instructionCacheSize, instructionLineSize, instructionCycles);
+      instruction_cache.access_sequence(instructionSeq);
 
     return 0;
 }
